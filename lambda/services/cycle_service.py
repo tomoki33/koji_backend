@@ -5,10 +5,10 @@ import uuid
 
 def create_cycle_log(user_id, cycle_id, data):
     timestamp = datetime.utcnow().isoformat()
-    unique_id = str(uuid.uuid4())  # ユニークなIDを生成
+    unique_id = str(uuid.uuid4())
     item = {
         "PK": f"USER#{user_id}",
-        "SK": f"CYCLE#{cycle_id}#{unique_id}",  # ユニークなIDをSKに追加
+        "SK": f"CYCLE#{cycle_id}#{unique_id}",
         "time": data["time"],
         "roomTemperature": data["roomTemperature"],
         "humidity": data["humidity"],
@@ -47,21 +47,20 @@ def get_cycle_logs(user_id, cycle_id):
         }
 
 def get_latest_cycle_log(user_id):
-    # DynamoDBから最新のサイクルログを取得するロジック
     response = table.query(
         KeyConditionExpression="PK = :pk",
         ExpressionAttributeValues={
             ":pk": f"USER#{user_id}"
         },
-        Limit=1,  # 最新の1つを取得
-        ScanIndexForward=False  # 降順で取得
+        Limit=1,
+        ScanIndexForward=False
     )
     
     items = response.get("Items", [])
     if items:
         return {
             "statusCode": 200,
-            "body": json.dumps(items[0])  # 最新のサイクルログを返す
+            "body": json.dumps(items[0])
         }
     else:
         return {

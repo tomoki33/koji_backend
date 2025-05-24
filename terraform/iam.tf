@@ -41,3 +41,19 @@ resource "aws_iam_role_policy" "lambda_dynamodb" {
     ]
   })
 }
+
+resource "aws_iam_role_policy" "lambda_s3" {
+  name = "lambda-s3-policy"
+  role = aws_iam_role.lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = "s3:*"
+        Resource = "arn:aws:s3:::kojiapp/*"
+      }
+    ]
+  })
+}
