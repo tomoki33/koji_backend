@@ -1,8 +1,7 @@
 import json
 import jwt
 from services.user_service import create_user, get_user
-from services.cycle_service import create_cycle, get_user_cycles
-from services.temperature_service import create_temperature_log, get_cycle_logs
+from services.temperature_service import create_cycle_log, get_cycle_logs, get_latest_cycle_log
 import boto3
 
 dynamodb = boto3.resource('dynamodb')
@@ -72,14 +71,18 @@ def lambda_handler(event, context):
         # 温度記録関連のエンドポイント
         elif http_method == 'POST' and path.startswith('/cycles/'):
             cycle_id = path.split('/')[2]
-            response = create_temperature_log(user_id, cycle_id, json.loads(event['body']))
+            response = create_cycle_log(user_id, cycle_id, json.loads(event['body']))
             return {
                 'statusCode': response.get('statusCode', 200),
                 'body': json.dumps(response.get('body', {}))
             }        
+        elif http_method == 'GET' and path == '/cycles/latest-log':
+            return get_latest_cycle_log(user_id)  # ユーザーIDを引数に渡す
         elif http_method == 'GET' and path.startswith('/cycles/'):
             cycle_id = path.split('/')[2]
             return get_cycle_logs(user_id, cycle_id)
+        # 新しいエンドポイント: 最新のサイクルログを取得
+            
             
         return {
             'statusCode': 400,

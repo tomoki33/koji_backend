@@ -1,10 +1,9 @@
 from datetime import datetime
-from models.temperature import validate_temperature_log
 from utils.dynamodb import table
 import json
 import uuid
 
-def create_temperature_log(user_id, cycle_id, data):
+def create_cycle_log(user_id, cycle_id, data):
     timestamp = datetime.utcnow().isoformat()
     unique_id = str(uuid.uuid4())  # ユニークなIDを生成
     item = {
@@ -47,53 +46,25 @@ def get_cycle_logs(user_id, cycle_id):
             'body': json.dumps({'error': 'Cycle not found'})
         }
 
-
-def get_temperature_stats(cycle_id):
+def get_latest_cycle_log(user_id):
+    # DynamoDBから最新のサイクルログを取得するロジック
     response = table.query(
-        KeyConditionExpression="PK = :pk AND begins_with(SK, :sk)",
+        KeyConditionExpression="PK = :pk",
         ExpressionAttributeValues={
-            ":pk": f"CYCLE#{cycle_id}",
-            ":sk": "LOG#"
-        }
-    )
-    
-    logs = response.get("Items", [])
-    if not logs:
-        return {"statusCode": 200, "body": {"message": "No logs found"}}
-    
-    # 温度と湿度の統計を計算
-    temperatures = [float(log["temperature"]) for log in logs]
-    humidities = [float(log["humidity"]) for log in logs]
-    
-    stats = {
-        "temperature": {
-            "min": min(temperatures),
-            "max": max(temperatures),
-            "avg": sum(temperatures) / len(temperatures)
+            ":pk": f"USER#{user_id}"
         },
-        "humidity": {
-            "min": min(humidities),
-            "max": max(humidities),
-            "avg": sum(humidities) / len(humidities)
-        },
-        "total_logs": len(logs)
-    }
-    
-    return {"statusCode": 200, "body": stats}
-
-def get_latest_temperature(cycle_id):
-    response = table.query(
-        KeyConditionExpression="PK = :pk AND begins_with(SK, :sk)",
-        ExpressionAttributeValues={
-            ":pk": f"CYCLE#{cycle_id}",
-            ":sk": "LOG#"
-        },
-        ScanIndexForward=False,  # 降順で取得
-        Limit=1  # 最新の1件のみ
+        Limit=1,  # 最新の1つを取得
+        ScanIndexForward=False  # 降順で取得
     )
     
     items = response.get("Items", [])
-    if not items:
-        return {"statusCode": 404, "body": {"message": "No temperature logs found"}}
-    
-    return {"statusCode": 200, "body": items[0]}
+    if items:
+        return {
+            "statusCode": 200,
+            "body": json.dumps(items[0])  # 最新のサイクルログを返す
+        }
+    else:
+        return {
+            'statusCode': 404,
+            'body': json.dumps({'error': 'No cycle logs found'})
+        }
