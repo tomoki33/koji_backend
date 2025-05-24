@@ -11,7 +11,7 @@ table = dynamodb.Table('koji_data')
 def get_user_id(event):
     """Cognitoの認証トークンからユーザーIDを取得"""
     try:
-        auth_header = event.get('headers', {}).get('Authorization', '')
+        auth_header = event.get('headers', {}).get('authorization', '')
         if not auth_header.startswith('Bearer '):
             return None
         
@@ -72,22 +72,14 @@ def lambda_handler(event, context):
         # 温度記録関連のエンドポイント
         elif http_method == 'POST' and path.startswith('/cycles/'):
             cycle_id = path.split('/')[2]
-            # サイクルが自分のものかチェック
-            if not is_cycle_owner(cycle_id, user_id):
-                return {
-                    'statusCode': 403,
-                    'body': json.dumps({'error': 'Forbidden'})
-                }
-            return create_temperature_log(cycle_id, json.loads(event['body']))
+            response = create_temperature_log(user_id, cycle_id, json.loads(event['body']))
+            return {
+                'statusCode': response.get('statusCode', 200),
+                'body': json.dumps(response.get('body', {}))
+            }        
         elif http_method == 'GET' and path.startswith('/cycles/'):
             cycle_id = path.split('/')[2]
-            # サイクルが自分のものかチェック
-            if not is_cycle_owner(cycle_id, user_id):
-                return {
-                    'statusCode': 403,
-                    'body': json.dumps({'error': 'Forbidden'})
-                }
-            return get_cycle_logs(cycle_id)
+            return get_cycle_logs(user_id, cycle_id)
             
         return {
             'statusCode': 400,
@@ -100,18 +92,3 @@ def lambda_handler(event, context):
             'body': json.dumps({'error': str(e)})
         }
 
-def is_cycle_owner(cycle_id, user_id):
-    """サイクルが指定されたユーザーのものかチェック"""
-    try:
-        # DynamoDBからサイクル情報を取得
-        response = table.get_item(
-            Key={
-                'PK': f'CYCLE#{cycle_id}',
-                'SK': 'METADATA'
-            }
-        )
-        cycle = response.get('Item')
-        return cycle and cycle.get('user_id') == user_id
-    except Exception as e:
-        print(f"Error checking cycle ownership: {str(e)}")
-        return False

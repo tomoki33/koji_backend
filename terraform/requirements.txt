@@ -1,5 +1,4 @@
 boto3
-PyJWT
+PyJWT==2.8.0
 cryptography 
-jwt
 cffi

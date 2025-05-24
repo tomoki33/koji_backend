@@ -166,22 +166,11 @@ terraform apply
 | name | String | ユーザー名 |
 | created_at | String | 作成日時（ISO 8601） |
 
-##### 2. サイクル情報
+##### 2. 
 | 属性名 | 型 | 説明 |
 |--------|------|------|
 | PK | String | `USER#<user_id>` |
 | SK | String | `CYCLE#<cycle_id>` |
-| start_date | String | 開始日 |
-| end_date | String | 終了日 |
-| status | String | サイクルの状態 |
-| notes | String | メモ |
-| created_at | String | 作成日時（ISO 8601） |
-
-##### 3. 温度記録
-| 属性名 | 型 | 説明 |
-|--------|------|------|
-| PK | String | `CYCLE#<cycle_id>` |
-| SK | String | `LOG#<timestamp>` |
 | temperature | Number | 温度 |
 | humidity | Number | 湿度 |
 | time | String | 記録時間 |

@@ -1,7 +1,7 @@
 # Cognito User Pool
 resource "aws_cognito_user_pool" "koji_pool" {
   name = "koji-user-pool"
-
+  username_attributes = ["email"]
   # パスワードポリシー
   password_policy {
     minimum_length    = 8

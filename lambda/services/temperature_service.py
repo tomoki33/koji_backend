@@ -1,20 +1,20 @@
 from datetime import datetime
 from models.temperature import validate_temperature_log
 from utils.dynamodb import table
+import json
+import uuid
 
-def create_temperature_log(cycle_id, data):
-    is_valid, error = validate_temperature_log(data)
-    if not is_valid:
-        return {"statusCode": 400, "body": {"error": error}}
-
+def create_temperature_log(user_id, cycle_id, data):
     timestamp = datetime.utcnow().isoformat()
+    unique_id = str(uuid.uuid4())  # ユニークなIDを生成
     item = {
         "PK": f"USER#{user_id}",
-        "SK": f"CYCLE#{cycle_id}", 
-        "temperature": data["temperature"],
-        "humidity": data["humidity"],
+        "SK": f"CYCLE#{cycle_id}#{unique_id}",  # ユニークなIDをSKに追加
         "time": data["time"],
-        "notes": data["notes"],
+        "roomTemperature": data["roomTemperature"],
+        "humidity": data["humidity"],
+        "productTemperature": data["productTemperature"],
+        "comment": data["comment"],
         "created_at": timestamp
     }
     
@@ -27,15 +27,26 @@ def create_temperature_log(cycle_id, data):
         }
     }
 
-def get_cycle_logs(cycle_id):
+def get_cycle_logs(user_id, cycle_id):
     response = table.query(
         KeyConditionExpression="PK = :pk AND begins_with(SK, :sk)",
         ExpressionAttributeValues={
-            ":pk": f"CYCLE#{cycle_id}",
-            ":sk": "LOG#"
+            ":pk": f"USER#{user_id}",
+            ":sk": f"CYCLE#{cycle_id}#"
         }
     )
-    return {"statusCode": 200, "body": response.get("Items", [])}
+    items = response.get("Items", [])
+    if items:
+        return {
+            "statusCode": 200,
+            "body": json.dumps(items)
+        }
+    else:
+        return {
+            'statusCode': 404,
+            'body': json.dumps({'error': 'Cycle not found'})
+        }
+
 
 def get_temperature_stats(cycle_id):
     response = table.query(

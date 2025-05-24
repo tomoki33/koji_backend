@@ -1,6 +1,12 @@
 resource "aws_apigatewayv2_api" "http_api" {
   name          = "koji-api"
   protocol_type = "HTTP"
+
+  cors_configuration {
+    allow_origins = ["*"]  # 全てのオリジンを許可
+    allow_methods = ["*"]  # 許可するメソッド
+    allow_headers = ["*"]  # 許可するヘッダー
+  }
 }
 
 resource "aws_apigatewayv2_stage" "default" {
