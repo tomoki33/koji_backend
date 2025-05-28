@@ -1,6 +1,6 @@
 import json
 import jwt
-from services.cycle_service import create_cycle_log, get_cycle_logs, get_latest_cycle_log
+from services.cycle_service import create_cycle_log, get_cycle_logs, get_latest_cycle_log,update_cycle_log, get_cycle_log
 import boto3
 
 dynamodb = boto3.resource('dynamodb')
@@ -32,17 +32,30 @@ def lambda_handler(event,context):
     path = event['path']
     
     try:            
+        if http_method == 'POST' and path.startswith('/cycles/update'):
+            cycle_id = path.split('/')[3]
+            data = json.loads(event['body'])
+            response = update_cycle_log(user_id, cycle_id, data)
+            return {
+                'statusCode': response.get('statusCode', 200),
+                'body': json.dumps(response.get('body', {}))
+            }
         if http_method == 'POST' and path.startswith('/cycles/'):
             cycle_id = path.split('/')[2]
             response = create_cycle_log(user_id, cycle_id, json.loads(event['body']))
             return {
                 'statusCode': response.get('statusCode', 200),
                 'body': json.dumps(response.get('body', {}))
-            }        
+            } 
         elif http_method == 'GET' and path == '/cycles/latest-log':
             return get_latest_cycle_log(user_id)
         elif http_method == 'GET' and path.startswith('/cycles/'):
             cycle_id = path.split('/')[2]
+            parts = path.split('/')
+            if len(parts) == 5:  # /cycles/{cycle_id}/{date}/{time}
+                date = parts[3]
+                time = parts[4]
+                return get_cycle_log(user_id, cycle_id, date, time)
             return get_cycle_logs(user_id, cycle_id)            
         return {
             'statusCode': 400,
@@ -54,4 +67,9 @@ def lambda_handler(event,context):
             'statusCode': 500,
             'body': json.dumps({'error': str(e)})
         }
+def create_response(status_code, body):
+    return {
+        'statusCode': status_code,
+        'body': json.dumps(body)
+    }
 
